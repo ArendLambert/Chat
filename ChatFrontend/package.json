@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "antd": "^5.21.6",
+    "lib-jitsi-meet": "^1.0.6",
+    "simple-peer": "^9.11.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "devDependencies": {
+    "@types/socket.io-client": "^1.4.36"
+  }
+}
