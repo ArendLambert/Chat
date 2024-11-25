@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "0ciFoJAe1nw=",
+  "dgSpecHash": "0Y3u7nm+WKI=",
   "success": true,
-  "projectFilePath": "C:\\Users\\79069\\source\\repos\\Chat\\Chat.DataAccess\\Chat.DataAccess.csproj",
+  "projectFilePath": "C:\\Users\\79069\\source\\repos\\Chat\\ChatBackend\\Chat.DataAccess\\Chat.DataAccess.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\79069\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\79069\\.nuget\\packages\\microsoft.aspnetcore.cors\\2.2.0\\microsoft.aspnetcore.cors.2.2.0.nupkg.sha512",

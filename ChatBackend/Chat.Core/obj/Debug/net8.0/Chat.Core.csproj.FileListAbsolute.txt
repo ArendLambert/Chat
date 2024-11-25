@@ -10,3 +10,16 @@ C:\Users\79069\source\repos\Chat\Chat.Core\obj\Debug\net8.0\refint\Chat.Core.dll
 C:\Users\79069\source\repos\Chat\Chat.Core\obj\Debug\net8.0\Chat.Core.pdb
 C:\Users\79069\source\repos\Chat\Chat.Core\obj\Debug\net8.0\ref\Chat.Core.dll
 C:\Users\79069\source\repos\Chat\Chat.Core\obj\Debug\net8.0\Chat.Core.csproj.AssemblyReference.cache
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\bin\Debug\net8.0\Chat.Core.deps.json
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\bin\Debug\net8.0\Chat.Core.dll
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\bin\Debug\net8.0\Chat.Core.pdb
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.csproj.AssemblyReference.cache
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.AssemblyInfoInputs.cache
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.AssemblyInfo.cs
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.csproj.CoreCompileInputs.cache
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.sourcelink.json
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.dll
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\refint\Chat.Core.dll
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\Chat.Core.pdb
+C:\Users\79069\source\repos\Chat\ChatBackend\Chat.Core\obj\Debug\net8.0\ref\Chat.Core.dll

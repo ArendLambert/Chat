@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "TZv+nASXZNg=",
+  "dgSpecHash": "QUXwTIAeME0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\79069\\source\\repos\\Chat\\Chat.Infrastructure\\Chat.Infrastructure.csproj",
+  "projectFilePath": "C:\\Users\\79069\\source\\repos\\Chat\\ChatBackend\\Chat.Infrastructure\\Chat.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\79069\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\79069\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.10\\microsoft.aspnetcore.authentication.jwtbearer.8.0.10.nupkg.sha512",

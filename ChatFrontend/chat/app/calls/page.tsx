@@ -1,50 +1,59 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import io from 'socket.io-client';
-import Peer, { Instance as PeerInstance, SignalData } from 'simple-peer';
+import { HubConnectionBuilder, HubConnection, HttpTransportType } from '@microsoft/signalr';
 
 const VideoCall = () => {
   const [stream, setStream] = useState<MediaStream | undefined>(undefined);
-  const [peer, setPeer] = useState<PeerInstance | null>(null);
+  const [connection, setConnection] = useState<HubConnection | null>(null);
   const [otherUserId, setOtherUserId] = useState<string>('!!!');
   const [myId, setMyId] = useState<string>('');
   const myVideoRef = useRef<HTMLVideoElement | null>(null);
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
-  const socketRef = useRef<ReturnType<typeof io> | null>(null);
-  let testStream: MediaStream;
+  const peerConnection = useRef<RTCPeerConnection | null>(null);
 
-  // Инициализация сокета
+  // Инициализация SignalR соединения
   useEffect(() => {
-    socketRef.current = io('https://audiocase.ru:3001', {
-      secure: true,
-      rejectUnauthorized: false // только если у вас самоподписанный сертификат
-    });
-    socketRef.current.on('answer', handleAnswer);
-    socketRef.current.on('candidate', handleCandidate);
-    // Получаем свой уникальный ID от сервера
-    socketRef.current.on('your-id', (id: string) => {
-      setMyId(id);
-      console.log('My ID:', id);
-    });
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const newConnection = new HubConnectionBuilder()
+      .withUrl(`${apiBaseUrl}/videohub`, {
+        withCredentials: true,
+        skipNegotiation: true,
+        transport: HttpTransportType.WebSockets
+      })
+      .withAutomaticReconnect()
+      .build();
 
+    setConnection(newConnection);
 
+    newConnection.start()
+      .then(() => {
+        console.log('SignalR Connected!');
+        // Получаем свой ID от сервера
+        newConnection.invoke("GetConnectionId").then((id) => {
+          setMyId(id);
+          console.log('My ID:', id);
+        });
+      })
+      .catch(err => console.error('SignalR Connection Error: ', err));
+
+    // Обработчики SignalR событий
+    newConnection.on("ReceiveOffer", handleOffer);
+    newConnection.on("ReceiveAnswer", handleAnswer);
+    newConnection.on("ReceiveCandidate", handleCandidate);
 
     return () => {
-      socketRef.current?.disconnect();
+      if (newConnection) {
+        newConnection.stop();
+      }
+      if (peerConnection.current) {
+        peerConnection.current.close();
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
     };
   }, []);
-
-  // Отслеживание изменений otherUserId
-  useEffect(() => {
-    socketRef.current?.off('offer');
-    //socketRef.current?.off('answer');
-    //socketRef.current?.off('candidate');
-    socketRef.current?.on('offer', handleOffer);
-    //socketRef.current?.on('answer', handleAnswer);
-    //socketRef.current?.on('candidate', handleCandidate);
-    console.log("Updated otherUserId:", otherUserId);
-  }, [otherUserId]);
 
   const startVideo = async () => {
     try {
@@ -62,125 +71,148 @@ const VideoCall = () => {
     }
   };
 
-  const createPeer = () => {
-    if (!stream || !otherUserId) return; // Проверяем, что введен ID собеседника
+  const createPeerConnection = () => {
+    if (!stream || !otherUserId) return;
 
-    const newPeer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream,
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
     });
 
-    newPeer.on('signal', (data) => {
-      console.log('Sending offer to:', otherUserId);
-      socketRef.current?.emit('offer', data, otherUserId);
+    // Добавляем локальные треки
+    stream.getTracks().forEach(track => {
+      pc.addTrack(track, stream);
     });
 
-    newPeer.on('stream', (userStream) => {
-      console.log('Received stream from peer');
-      console.log(userStream);
-      if (userVideoRef.current) {
-        userVideoRef.current.srcObject = userStream;
-      }
-    });
-
-    setPeer(newPeer);  // Устанавливаем peer
-  };
-
-  const handleOffer = (offer: SignalData) => {
-    console.log('Received offer:', offer);
-    console.log(otherUserId);
-    if (!stream) {
-      console.log('No stream available, waiting for media stream...');
-      startVideo().then(() => {
-        console.log('Stream available now, handling offer');
-        createPeerForAnswer(offer);
-      });
-      return;
-    }
-
-    console.log('Stream available, creating peer for answer...');
-    createPeerForAnswer(offer);
-  };
-
-  const createPeerForAnswer = (offer: SignalData) => {
-    if (!otherUserId) {
-      console.error("ERROR: 'otherUserId' is not set! Cannot proceed.");
-      return;
-    }
-  
-    const newPeer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream,
-    });
-  
-    newPeer.on('signal', (answer: SignalData) => {
-      console.log('ANSWER Sending answer back to initiator');
-      console.log("otherUserId =", otherUserId);
-      socketRef.current?.emit('answer', answer, otherUserId);  // Отправка ответа
-    });
-  
-    newPeer.on('stream', (userStream) => {
-      console.log('Received stream from peer = ' + userStream);
-      console.log(userStream);
-      if (userVideoRef.current) {
-        testStream = userStream;
-        userVideoRef.current.srcObject = userStream;
-      }
-    });
-  
-    newPeer.on('icecandidate', (event) => {
+    // Обработка ICE кандидатов
+    pc.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log('Sending ICE candidate:', event.candidate);
-        socketRef.current?.emit('candidate', event.candidate, otherUserId);
-      } else {
-        console.log('No more ICE candidates');
+        console.log('Sending ICE candidate');
+        connection?.invoke("SendCandidate", otherUserId, event.candidate);
       }
-    });
-  
-    newPeer.signal(offer);
-    setPeer(newPeer);  // Устанавливаем peer для дальнейших действий
-  };
-  
+    };
 
-  const handleAnswer = (answer: SignalData) => {
-    console.log('Received answer:', answer);
-    if (peer) {
-      console.log('Sending answer to peer...');
-      peer.signal(answer);  // Отправляем ответ в peer
+    // Обработка входящего стрима
+    pc.ontrack = (event) => {
+      console.log('Received remote track');
+      if (userVideoRef.current) {
+        userVideoRef.current.srcObject = event.streams[0];
+      }
+    };
+
+    peerConnection.current = pc;
+    return pc;
+  };
+
+  const startCall = async () => {
+    const pc = createPeerConnection();
+    if (!pc) return;
+
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      console.log('Sending offer to:', otherUserId);
+      connection?.invoke("SendOffer", otherUserId, offer);
+    } catch (err) {
+      console.error('Error creating offer:', err);
     }
   };
 
-  const handleCandidate = (candidate: RTCIceCandidate) => {
-    if (peer) {
-      console.log('Received ICE candidate');
-      peer.signal({ type: 'candidate', candidate });
+  const handleOffer = async (fromUserId: string, offer: RTCSessionDescriptionInit) => {
+    console.log('Received offer from:', fromUserId);
+    setOtherUserId(fromUserId);
+
+    if (!stream) {
+      await startVideo();
+    }
+
+    const pc = createPeerConnection();
+    if (!pc) return;
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      connection?.invoke("SendAnswer", fromUserId, answer);
+    } catch (err) {
+      console.error('Error handling offer:', err);
+    }
+  };
+
+  const handleAnswer = async (answer: RTCSessionDescriptionInit) => {
+    console.log('Received answer');
+    try {
+      await peerConnection.current?.setRemoteDescription(
+        new RTCSessionDescription(answer)
+      );
+    } catch (err) {
+      console.error('Error handling answer:', err);
+    }
+  };
+
+  const handleCandidate = async (candidate: RTCIceCandidateInit) => {
+    try {
+      await peerConnection.current?.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (err) {
+      console.error('Error handling candidate:', err);
     }
   };
 
   return (
-    <div>
-      <h2>Video Call</h2>
-      <div>
-        <label>Your ID: {myId}</label>
+    <div className="p-4">
+      <h2 className="text-2xl mb-4">Video Call</h2>
+      <div className="mb-4">
+        <label className="block">Your ID: {myId}</label>
       </div>
-      <div>
-        <label>
+      <div className="mb-4">
+        <label className="block">
           Enter Peer ID:
           <input
             type="text"
-            onChange={(e) => setOtherUserId(e.target.value)} // Обновляем ID собеседника
-            placeholder="Enter the other user's ID"
+            value={otherUserId}
+            onChange={(e) => setOtherUserId(e.target.value)}
+            className="border p-2 ml-2"
           />
         </label>
       </div>
-
-      <video ref={myVideoRef} autoPlay muted />
-      <video ref={userVideoRef} autoPlay />
-      <button onClick={() => {console.log(testStream)}}>Дебаг</button>
-      <button onClick={startVideo}>Start Video Call</button>
-      <button onClick={createPeer}>Connect to Peer</button>
+      <div className="mb-4 space-x-2">
+        <button
+          onClick={startVideo}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Start Video
+        </button>
+        <button
+          onClick={startCall}
+          className="bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Call
+        </button>
+      </div>
+      <div className="flex space-x-4">
+        <div>
+          <h3 className="mb-2">Your Video</h3>
+          <video
+            ref={myVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="border"
+            style={{ width: '400px' }}
+          />
+        </div>
+        <div>
+          <h3 className="mb-2">Peer Video</h3>
+          <video
+            ref={userVideoRef}
+            autoPlay
+            playsInline
+            className="border"
+            style={{ width: '400px' }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
